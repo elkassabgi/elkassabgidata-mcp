@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+dist/
+*.log
+dns_key.hex
+.dev.vars

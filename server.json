@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.elkassabgidata/elkassabgidata",
+  "title": "ElkassabgiData",
+  "description": "A growing family of free academic data libraries: finance, economics, and beyond (ElkassabgiData).",
+  "version": "1.0.1",
+  "websiteUrl": "https://elkassabgidata.com",
+  "repository": {
+    "url": "https://github.com/elkassabgi/hfdatalibrary",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://elkassabgidata-mcp.elkassabgi.workers.dev/mcp",
+      "headers": [
+        {
+          "name": "X-API-Key",
+          "description": "Free ElkassabgiData API key — one free account works across every ElkassabgiData library (only needed for data-download tools; search/browse works anonymously). Get one at hfdatalibrary.com/pages/download",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

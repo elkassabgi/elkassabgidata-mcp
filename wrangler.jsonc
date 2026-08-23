@@ -1,0 +1,20 @@
+// elkassabgidata-mcp — remote MCP server for the ElkassabgiData family.
+// McpAgent (agents SDK) on a Durable Object; Streamable HTTP at /mcp.
+// Auth: the user's ElkassabgiData API key arrives per-request via
+// Authorization: Bearer / X-API-Key header, or ?api_key= on the configured
+// URL — extracted in the Worker fetch wrapper into ctx.props (never stored).
+{
+  "name": "elkassabgidata-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ElkassabgiDataMCP"] }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "class_name": "ElkassabgiDataMCP", "name": "MCP_OBJECT" }
+    ]
+  },
+  "observability": { "enabled": true }
+}
