@@ -1,8 +1,8 @@
 {
   "name": "elkassabgidata-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "ElkassabgiData MCP server — AI-native access to the family of free research data libraries (hfdatalibrary.com + econdatalibrary.com)",
+  "description": "ElkassabgiData MCP server — AI-native access to the family of free research data libraries (hfdatalibrary.com + econdatalibrary.com + ipdatalibrary.com)",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

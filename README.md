@@ -10,22 +10,23 @@ It runs as a Cloudflare Worker with a Durable Object per session.
 
 ## What it does
 
-Eleven tools across the three libraries. The four **browse** tools work with no account at
-all; the **data** tools need a free API key (see below).
+Twelve tools across the three libraries, one server for all of them. Browsing, searching and
+the download links work with no account; the data itself needs a free API key (see below).
 
 | Tool | Library | Key needed |
 |---|---|---|
-| `search_econ_series` | Econ | no |
+| `search_econ_series` | Econ | no (paging with `offset`; `lang` for official translated titles) |
 | `get_econ_series_metadata` | Econ | no |
 | `list_econ_sources` | Econ | no |
-| `get_data_freshness` | all | no |
+| `get_data_freshness` | Econ | no |
+| `get_econ_bundle_manifest` | Econ | no for the manifest; yes to download its URLs |
+| `get_econ_series` | Econ | yes |
+| `get_hf_variables_dictionary` | HF equities | no |
+| `get_hf_download_link` | HF equities | no for the link; yes to download the file |
+| `list_ip_bundles` | IP / patents | no |
+| `get_ip_download_link` | IP / patents | no for the link; yes to download the file |
 | `get_family_status` | all | no |
 | `get_auth_status` | all | no |
-| `get_econ_series` | Econ | yes |
-| `get_hf_download_link` | HF equities | yes |
-| `get_hf_variables_dictionary` | HF equities | yes |
-| `list_ip_bundles` | IP / patents | yes |
-| `get_ip_download_link` | IP / patents | yes |
 
 Every response carries the source's own licence with it, because the licence differs per
 source and honouring it is the user's obligation as much as ours.
@@ -95,17 +96,17 @@ Calling `search_econ_series` with no API key:
 }
 ```
 
-The actual response:
+The actual response (live server, 2026-10-02; counts change as the catalogue grows):
 
 ```
-18,554 series match "unemployment rate". Showing 3:
+8,294 series match "unemployment rate". Showing 3:
 
-bls:LNS14000000
-   Unemployment rate, 16+ (SA, %) [M, US] 1948-01-01→2026-07-01 · license:us-public-domain
 abs:LF:M13.3.1599.20.AUS.M
    Unemployment rate (persons, SA, Australia) [M, AU, Percent] 1978-02-28→2026-04-30 · license:cc-by-4.0
-statcan:V2062815
-   Unemployment rate, 15+, Canada (SA, %) [M, CA, percent] 1986-05-01→2026-04-01 · license:statcan-open
+adb:ADB:PPL:LUR_PT:AFG
+   Unemployment rate [?, ?] 2001-12-31→2020-12-31 · license:cc-by-3.0-igo-adb
+adb:ADB:PPL:LUR_PT:ARM
+   Unemployment rate [?, ?] 2000-12-31→2023-12-31 · license:cc-by-3.0-igo-adb
 
 Fetch data with get_econ_series(series_id). Metadata + citation with get_econ_series_metadata.
 ```
