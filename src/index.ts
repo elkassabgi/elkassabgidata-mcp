@@ -194,7 +194,7 @@ const VARIABLES_25 = `The 25 pre-computed academic variables (per ticker, per tr
 
 const HONESTY_CHARTER = `ElkassabgiData honesty charter (relay these caveats with any analysis):
 • HF universe (US stocks/ETFs) is a recent snapshot — SURVIVOR-BIASED before ~2022. Cross-sectional results on earlier years must disclose this.
-• HF source break: post-2022-03-01 bars come from IEX Exchange HIST (~2-3% of consolidated volume); earlier data from a consolidated-history vendor. Volume levels are not comparable across the break.
+• HF source break: trading days from 2022-03-07 onward come from IEX Exchange HIST (~2-3% of consolidated volume); earlier days from a consolidated-history vendor. The monthly bar dated 2022-03-01 spans the break. Volume levels are not comparable across the break.
 • 1-minute bars are NOT tick data: no quotes, no trade-level timestamps, no order book.
 • Econ licensing is PER SOURCE: most are CC-BY-class (attribution required); a substantial share are non-commercial (commercial_ok=false in the metadata), and some forbid modification (no_modify). Data whose licence does not allow redistribution is not served or offered for download. The license ships in every series' metadata — honor it.
 • IP measures are computed from USPTO data (public domain, via PatentsView bulk tables); they are not the official USPTO record. Forward-citation counts are right-censored for recent patents.
@@ -567,7 +567,7 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
         (dataset === "bars"
           ? `Schema: datetime, Open, High, Low, Close, Volume (1-minute, regular session). Full history ≈ 0.5–2M rows per ticker.\n`
           : `Schema: trade_date + the 25 academic variables (see the variables dictionary resource/tool). One row per trading day.\n`) +
-        `${keyNote}\n\nCaveats that MUST accompany analysis: survivor-biased universe pre-2022; IEX source break 2022-03-01 (volumes not comparable across it); 1-minute bars ≠ tick data.`);
+        `${keyNote}\n\nCaveats that MUST accompany analysis: survivor-biased universe pre-2022; IEX source break 2022-03-07 (volumes not comparable across it); 1-minute bars ≠ tick data.`);
     });
 
     s.registerTool("get_hf_variables_dictionary", {
@@ -771,7 +771,7 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
         `code environment with the user's key from $ELKASSABGIDATA_KEY (never paste the key into chat); ` +
         `2) window ±5 trading days; compute minute returns, cumulative abnormal return vs the ticker's own ` +
         `intraday mean pattern, and realized volatility before/after; 3) plot; 4) disclose the standing caveats: ` +
-        `survivor-biased universe pre-2022, IEX source break 2022-03-01 (volume levels not comparable across it), ` +
+        `survivor-biased universe pre-2022, IEX source break 2022-03-07 (volume levels not comparable across it), ` +
         `1-minute bars are not tick data. Cite: HF Data Library (hfdatalibrary.com), DOI 10.5281/zenodo.19501605.` } }],
     }));
   }
