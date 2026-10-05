@@ -34,7 +34,7 @@ source and honouring it is the user's obligation as much as ours.
 ## Getting an API key
 
 Free, instant, and one key works across all three libraries:
-<https://hfdatalibrary.com/pages/download>
+<https://econdatalibrary.com/account>
 
 The key is used server-side only and is never echoed back into the conversation in full:
 `get_auth_status` shows only its first four characters and its length, so you can tell which key is set.

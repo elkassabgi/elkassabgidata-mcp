@@ -11,7 +11,7 @@
 //     API key (ONE account across every library, current and future).
 //   * HONESTY IS LAW: upstream error messages (401/404/429/501/502) are
 //     relayed verbatim — they are designed to be actionable. Data caveats
-//     (survivorship, source breaks, licensing) ship WITH the data, and
+//     (coverage, licensing, freshness) ship WITH the data, and
 //     truncation is always disclosed, never silent.
 //   * The user's key passes through per-request (header or ?api_key= on the
 //     configured URL) into ctx.props; it is never stored, logged, or echoed
@@ -30,8 +30,8 @@ type Props = { apiKey: string | null };
 const ECON = "https://econdl-api.elkassabgi.workers.dev";
 const IP_API = "https://api.ipdatalibrary.com";
 const HF_API = "https://api.hfdatalibrary.com";
-const HF_SITE = "https://hfdatalibrary.com";
-const ACCOUNT_URL = "https://hfdatalibrary.com/pages/download";
+// hf sign-ups are paused (2026-10-03); econ's account page creates the same family account.
+const ACCOUNT_URL = "https://econdatalibrary.com/account";
 const MAX_CHARS = 45_000;          // per-tool-response ceiling (context-friendly)
 // R615: an unfiltered large object is served as the STORED gzip bytes (a passthrough). Reading
 // one whole costs this isolate its 128 MB memory limit - and the isolate is the McpAgent Durable
@@ -192,9 +192,10 @@ const VARIABLES_25 = `The 25 pre-computed academic variables (per ticker, per tr
 24. Daily high-low range — ln(High_max / Low_min)
 25. Intraday return std — standard deviation of 1-minute log returns`;
 
+// The HF pause sentence is time-bound: when hf lifts DATA_PAUSED / HF_SIGNUPS_PAUSED, edit it (and the
+// get_hf_download_link note and the family-status HF line) and redeploy this worker.
 const HONESTY_CHARTER = `ElkassabgiData honesty charter (relay these caveats with any analysis):
-• HF universe (US stocks/ETFs) is a recent snapshot — SURVIVOR-BIASED before ~2022. Cross-sectional results on earlier years must disclose this.
-• HF source break: trading days from 2022-03-07 onward come from IEX Exchange HIST (~2-3% of consolidated volume); earlier days from a consolidated-history vendor. The monthly bar dated 2022-03-01 spans the break. Volume levels are not comparable across the break.
+• HF data is IEX Exchange HIST only, 2022-03-07 onward: IEX is ~2-3% of consolidated volume, so volumes and some prices differ from the full tape. The ticker list is not point-in-time: names are not added or removed automatically as companies list or delist. HF downloads and new HF sign-ups are paused while the dataset is restructured.
 • 1-minute bars are NOT tick data: no quotes, no trade-level timestamps, no order book.
 • Econ licensing is PER SOURCE: most are CC-BY-class (attribution required); a substantial share are non-commercial (commercial_ok=false in the metadata), and some forbid modification (no_modify). Data whose licence does not allow redistribution is not served or offered for download. The license ships in every series' metadata — honor it.
 • IP measures are computed from USPTO data (public domain, via PatentsView bulk tables); they are not the official USPTO record. Forward-citation counts are right-censored for recent patents.
@@ -538,10 +539,11 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
       title: "HF Equity Data Download Link",
       description:
         "Authenticated download instructions for HF Data Library's 1-minute " +
-        "OHLCV bars (full per-ticker history of US stocks/ETFs, 2002→" +
-        "yesterday; parquet or csv) or the 25 pre-computed academic variables. " +
-        "Files are full-history (up to millions of rows) so they are fetched " +
-        "by YOUR code, not returned inline. Works with the same ElkassabgiData key.",
+        "OHLCV bars (per-ticker US stocks/ETFs from IEX Exchange HIST, 2022-03-07 " +
+        "onward; parquet or csv) or the 25 pre-computed academic variables. " +
+        "Each file holds a ticker's whole history, so it is fetched by YOUR code, " +
+        "not returned inline. HF downloads are paused while the dataset is " +
+        "restructured (the URL answers 503 data_paused). Works with the same ElkassabgiData key.",
       inputSchema: {
         ticker: z.string().regex(/^[A-Za-z0-9.]{1,10}$/).describe("e.g. AAPL, SPY"),
         dataset: z.enum(["bars", "variables", "quality"]).default("bars"),
@@ -560,14 +562,15 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
         : `No key is configured on this MCP server. ${KEY_FOR_URLS_MSG}`;
       return text(
         `${t} · ${dataset} · ${version}${dataset === "bars" ? " · " + format : " · parquet"}\n\n` +
+        `NOTE: HF downloads are paused while the dataset is restructured; the URL answers 503 (data_paused) until they return.\n\n` +
         `URL: ${url}\n` +
         `Auth: send your ElkassabgiData key as the X-API-Key header (do NOT paste keys into chat):\n` +
         `  curl -H "X-API-Key: $ELKASSABGIDATA_KEY" -o ${t}_${dataset}.${dataset === "bars" ? format : "parquet"} "${url}"\n` +
         `  # or pandas: pd.read_parquet(io.BytesIO(requests.get(url, headers={"X-API-Key": KEY}).content))\n\n` +
         (dataset === "bars"
-          ? `Schema: datetime, Open, High, Low, Close, Volume (1-minute, regular session). Full history ≈ 0.5–2M rows per ticker.\n`
+          ? `Schema: datetime, Open, High, Low, Close, Volume (1-minute, regular session). One row per minute with an IEX trade.\n`
           : `Schema: trade_date + the 25 academic variables (see the variables dictionary resource/tool). One row per trading day.\n`) +
-        `${keyNote}\n\nCaveats that MUST accompany analysis: survivor-biased universe pre-2022; IEX source break 2022-03-07 (volumes not comparable across it); 1-minute bars ≠ tick data.`);
+        `${keyNote}\n\nCaveats that MUST accompany analysis: IEX Exchange only (~2-3% of consolidated volume), from 2022-03-07; 1-minute bars ≠ tick data.`);
     });
 
     s.registerTool("get_hf_variables_dictionary", {
@@ -651,16 +654,10 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
       annotations: { readOnlyHint: true },
     }, async () => {
       const out: string[] = ["ElkassabgiData family status\n"];
-      try {
-        const r = await upstream(`${HF_SITE}/data/metadata.json`);
-        if (r.ok) {
-          const m = await r.json() as Record<string, any>;
-          out.push(
-            `HF Data Library (hfdatalibrary.com): ${Number(m.tickers).toLocaleString()} tickers, ` +
-            `${Number(m.bars_clean).toLocaleString()} clean 1-min bars, data through ${m.end_date}. ` +
-            `Last update: ${m.update_summary ?? m.data_updated}`);
-        } else out.push("HF Data Library: status ledger unreachable right now.");
-      } catch { out.push("HF Data Library: status ledger unreachable right now."); }
+      // hf's published figures still count the withdrawn pre-2022 history; they return after the rebuild.
+      out.push(
+        "HF Data Library (hfdatalibrary.com): downloads are paused while the dataset is restructured to " +
+        "IEX Exchange HIST data from 2022-03-07; its figures will be published again after the rebuild.");
       try {
         const r = await upstream(`${ECON}/v1/stats`);
         if (r.ok) {
@@ -703,7 +700,7 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
 
     // ═════════════════ RESOURCES ═════════════════
     s.registerResource("data-honesty-charter", "elkassabgidata://honesty", {
-      description: "Standing data caveats every analysis should disclose (survivorship, source breaks, licensing, freshness semantics).",
+      description: "Standing data caveats every analysis should disclose (HF coverage, licensing, freshness semantics).",
       mimeType: "text/plain",
     }, async (uri) => ({
       contents: [{ uri: uri.href, mimeType: "text/plain", text: HONESTY_CHARTER }],
@@ -722,7 +719,8 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
     }, async (uri) => ({
       contents: [{ uri: uri.href, mimeType: "text/plain", text:
         "ElkassabgiData (elkassabgidata.com) is a family of free, research-grade data libraries " +
-        "by Ahmed Elkassabgi: HF Data Library (1-minute US equity OHLCV, 2002→present, raw+clean, " +
+        "by Ahmed Elkassabgi: HF Data Library (1-minute US equity OHLCV from IEX Exchange HIST, 2022-03-07→present, " +
+        "downloads paused while it is restructured; raw+clean, " +
         "25 academic variables), Econ Data Library (billions of economic/financial series from hundreds of " +
         "sources with per-series licensing and citations) and IP Data Library (patent & innovation measures " +
         "from USPTO data). Live figures: get_family_status. ONE free account works across every " +
@@ -771,7 +769,7 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
         `code environment with the user's key from $ELKASSABGIDATA_KEY (never paste the key into chat); ` +
         `2) window ±5 trading days; compute minute returns, cumulative abnormal return vs the ticker's own ` +
         `intraday mean pattern, and realized volatility before/after; 3) plot; 4) disclose the standing caveats: ` +
-        `survivor-biased universe pre-2022, IEX source break 2022-03-07 (volume levels not comparable across it), ` +
+        `IEX Exchange only (~2-3% of consolidated volume) from 2022-03-07, ` +
         `1-minute bars are not tick data. Cite: HF Data Library (hfdatalibrary.com), DOI 10.5281/zenodo.19501605.` } }],
     }));
   }
@@ -793,7 +791,7 @@ h1{font-family:Georgia,serif}code{background:#f3f4f6;padding:.15rem .4rem;border
 <p><b>Downloads</b> need the free ElkassabgiData key (browse/search is open). Configure it as an
 <code>X-API-Key</code> header, <code>Authorization: Bearer</code>, or append
 <code>?api_key=YOUR_KEY</code> to the URL above.
-<a href="https://hfdatalibrary.com/pages/download">Get a free key</a> — one account for every library.</p>
+<a href="https://econdatalibrary.com/account">Get a free key</a> — one account for every library.</p>
 <p>Tools: search &amp; fetch econ series with citations · bundle manifests · per-source freshness board ·
 HF bars/variables download links · IP bundle download links · family status · honesty charter · analysis prompts.</p>
 </body></html>`;
