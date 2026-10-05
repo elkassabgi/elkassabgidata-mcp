@@ -770,7 +770,7 @@ export class ElkassabgiDataMCP extends McpAgent<Env, Record<string, never>, Prop
         `2) window ±5 trading days; compute minute returns, cumulative abnormal return vs the ticker's own ` +
         `intraday mean pattern, and realized volatility before/after; 3) plot; 4) disclose the standing caveats: ` +
         `IEX Exchange only (~2-3% of consolidated volume) from 2022-03-07, ` +
-        `1-minute bars are not tick data. Cite: HF Data Library (hfdatalibrary.com), DOI 10.5281/zenodo.19501605.` } }],
+        `1-minute bars are not tick data. Cite: HF Data Library (hfdatalibrary.com), DOI 10.5281/zenodo.19501604.` } }],
     }));
   }
 }
